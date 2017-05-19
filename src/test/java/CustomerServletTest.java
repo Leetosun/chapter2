@@ -7,14 +7,14 @@ import org.leomo.chapter2.service.CustomerService;
 import java.util.List;
 
 /**
- * Created by LeeToSun on 2017/5/18
+ * Created by LeeToSun on 2017/5/19
  */
-class CustomerServletTest {
+public class CustomerServletTest {
 
     private final CustomerService customerService;
 
-    CustomerServletTest(CustomerService customerService) {
-        this.customerService = customerService;
+    public CustomerServletTest() {
+        this.customerService = new CustomerService();
     }
 
     @Before
@@ -25,6 +25,9 @@ class CustomerServletTest {
     @Test
     public void getCustomerListTest() throws Exception {
         List<Customer> customers = customerService.getCustomerList();
+        for (Customer customer : customers) {
+            System.out.println(customer);
+        }
         Assert.assertEquals(2, customers.size());
     }
 
