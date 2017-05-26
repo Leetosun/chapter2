@@ -1,6 +1,5 @@
 package org.leomo.chapter2.helper;
 
-import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
@@ -9,10 +8,6 @@ import org.leomo.chapter2.util.PropsUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -22,44 +17,46 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Created by LeeToSun on 2017/5/26
+ * Created by LeeToSun on 2017/5/22
  */
-public class DatabaseHelper {
+@Deprecated
+public class DatabaseHelperOld {
 
-    private DatabaseHelper() {
+    private DatabaseHelperOld() {
 
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseHelperOld.class);
+
+    private static final String DRIVER;
+
+    private static final String URL;
+
+    private static final String USERNAME;
+
+    private static final String PASSWORD;
 
     //-QueryRunner- 对象可以面向实体对象进行查询
-    private static final QueryRunner QUERY_RUNNER;
-
-    //连接池
-    private static final BasicDataSource DATA_SOURCE;
+    private static final QueryRunner QUERY_RUNNER = new QueryRunner();
 
     /*
      * -ThreadLocal- 隔离线程的容器
      * 为了确保一个线程只有一个Connection，使用ThreadLocal存放本地线程变量
      * 在这里的Connection一定不会出现线程不安全问题
      */
-    private static final ThreadLocal<Connection> CONNECTION_HOLDER;
+    private static final ThreadLocal<Connection> CONNECTION_HOLDER = new ThreadLocal<Connection>();
 
     static {
-        QUERY_RUNNER = new QueryRunner();
-        DATA_SOURCE = new BasicDataSource();
-        CONNECTION_HOLDER = new ThreadLocal<Connection>();
-
         Properties props = PropsUtil.loadProps("config.properties");
-        String driver = props.getProperty("jdbc.driver");
-        String url = props.getProperty("jdbc.url");
-        String username = props.getProperty("jdbc.username");
-        String password = props.getProperty("jdbc.password");
-
-        DATA_SOURCE.setDriverClassName(driver);
-        DATA_SOURCE.setUrl(url);
-        DATA_SOURCE.setUsername(username);
-        DATA_SOURCE.setPassword(password);
+        DRIVER = props.getProperty("jdbc.driver");
+        URL = props.getProperty("jdbc.url");
+        USERNAME = props.getProperty("jdbc.username");
+        PASSWORD = props.getProperty("jdbc.password");
+        try {
+            Class.forName(DRIVER);
+        } catch (ClassNotFoundException e) {
+            LOGGER.error("can not load jdbc driver", e);
+        }
     }
 
     /**
@@ -72,7 +69,7 @@ public class DatabaseHelper {
         if (conn == null) {
             try {
                 //创建一个新的Connection
-                conn = DATA_SOURCE.getConnection();
+                conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
             } catch (SQLException e) {
                 LOGGER.error("get connection failure", e);
                 throw new RuntimeException(e);
@@ -82,6 +79,24 @@ public class DatabaseHelper {
             }
         }
         return conn;
+    }
+
+    /**
+     * 关闭数据库连接
+     */
+    private static void closeConnection() {
+        Connection conn = CONNECTION_HOLDER.get();
+        if (conn != null) {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                LOGGER.error("close connection failure", e);
+                throw new RuntimeException(e);
+            } finally {
+                //使用完毕后需要移除ThreadLocal中的Connection
+                CONNECTION_HOLDER.remove();
+            }
+        }
     }
 
     /**
@@ -96,6 +111,8 @@ public class DatabaseHelper {
         } catch (SQLException e) {
             LOGGER.error("query entity list failure", e);
             throw new RuntimeException(e);
+        } finally {
+            closeConnection();
         }
         return entityList;
     }
@@ -110,17 +127,21 @@ public class DatabaseHelper {
         } catch (SQLException e) {
             LOGGER.error("query entity failure", e);
             throw new RuntimeException(e);
+        } finally {
+            closeConnection();
         }
         return entity;
     }
 
-    public static int executeUpdate(String sql, Object... params) {
+    private static int executeUpdate(String sql, Object... params) {
         int rows;
         try {
             rows = QUERY_RUNNER.update(getConnection(), sql, params);
         } catch (SQLException e) {
             LOGGER.error("update failure", e);
             throw new RuntimeException(e);
+        } finally {
+            closeConnection();
         }
         return rows;
     }
@@ -180,20 +201,6 @@ public class DatabaseHelper {
      */
     private static <T> String getTableName(Class<T> entityClass) {
         return entityClass.getSimpleName().toLowerCase();
-    }
-
-    public static void executeSqlFile(String filePath) {
-        InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(filePath);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        try {
-            String sql;
-            while ((sql = reader.readLine()) != null) {
-                DatabaseHelper.executeUpdate(sql);
-            }
-        } catch (IOException e) {
-            LOGGER.error("execute sql file failure", e);
-            throw new RuntimeException(e);
-        }
     }
 
 }

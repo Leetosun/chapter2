@@ -6,6 +6,9 @@ package org.leomo.chapter2.util;
  */
 public final class CastUtil {
 
+    private CastUtil() {
+    }
+
     /**
      * 转型为String
      */

@@ -1,0 +1,11 @@
+<!-- Handler -->
+BeanHandler----------返回Bean对象
+BeanListHandler------返回List<Bean>对象
+BeanMapHandler-------返回Map<Bean>对象
+ArrayHandler---------返回Object[]对象
+ArrayListHandler-----返回List对象
+MapHandler-----------返回Map对象
+MapListHandler-------返回List<Map>对象
+ScalarHandler--------返回某列的值
+ColumnListHandler----返回某列的值列表
+KeyedHandler---------返回Map对象，需要指定列名

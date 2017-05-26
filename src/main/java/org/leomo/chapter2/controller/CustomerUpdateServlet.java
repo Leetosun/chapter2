@@ -1,6 +1,8 @@
 package org.leomo.chapter2.controller;
 
+import org.leomo.chapter2.model.Customer;
 import org.leomo.chapter2.service.CustomerService;
+import org.leomo.chapter2.util.CastUtil;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -12,10 +14,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by LeeToSun on 2017/5/18
+ * Created by LeeToSun on 2017/5/26
  */
-@WebServlet("/customer_create")
-public class CustomerCreateServlet extends HttpServlet {
+@WebServlet("/customer_edit")
+public class CustomerUpdateServlet extends HttpServlet {
 
     private CustomerService customerService;
 
@@ -26,7 +28,9 @@ public class CustomerCreateServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.getRequestDispatcher("/WEB-INF/view/customer_create.jsp").forward(req, resp);
+        Customer customer = customerService.getCustomer(CastUtil.castLong(req.getParameter("id")));
+        req.setAttribute("customer", customer);
+        req.getRequestDispatcher("/WEB-INF/view/customer_edit.jsp").forward(req, resp);
     }
 
     @Override
@@ -34,14 +38,18 @@ public class CustomerCreateServlet extends HttpServlet {
         Map<String, String[]> reqMap = req.getParameterMap();
         Map<String, Object> filedMap = new HashMap<>();
         for (String name : reqMap.keySet()) {
+            //不能修改id字段
+            if ("id".equals(name)) {
+                continue;
+            }
+            //使用ParameterMap时候返回的value是数组形式，需要取第一个(下标0)
             filedMap.put(name, reqMap.get(name)[0]);
         }
-        if (customerService.createCustomer(filedMap)) {
-            req.setAttribute("message", "添加成功！");
+        if (customerService.updateCustomer(CastUtil.castLong(req.getParameter("id")), filedMap)) {
+            req.setAttribute("message", "修改成功！");
         } else {
-            req.setAttribute("message", "添加失败！");
+            req.setAttribute("message", "修改失败！");
         }
         req.getRequestDispatcher("/WEB-INF/view/message.jsp").forward(req, resp);
     }
-
 }

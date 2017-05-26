@@ -13,6 +13,9 @@ import java.util.Properties;
  */
 public class PropsUtil {
 
+    private PropsUtil() {
+    }
+
     private final static Logger LOGGER = LoggerFactory.getLogger(PropsUtil.class);
 
     public static Properties loadProps(String fileName) {

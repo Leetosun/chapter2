@@ -1,7 +1,7 @@
 package org.leomo.chapter2.model;
 
 /**
- * Created by Administrator on 2017/5/18 0018.
+ * Created by LeeToSun on 2017/5/18
  */
 public class Customer {
     private long id;
